@@ -1,11 +1,11 @@
 {
   "keycloak": {
-    "hostname": "keycloak.ext.icrc.org",
+    "hostname": "keycloak.local",
     "ip": "192.168.16.42",
     "http_scheme": "https"
   },
   "keycloak-bridge": {
-    "hostname": "keycloak-bridge.ext.icrc.org",
+    "hostname": "keycloak-bridge.local",
     "ip": "192.168.16.42",
     "http_scheme": "https",
     "go_component_name": "keycloak-bridge-service"
