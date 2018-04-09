@@ -48,15 +48,15 @@ logging.basicConfig(
 logger = logging.getLogger('keycloak-tool.tests.service_keycloak')
 logger.setLevel(logging.DEBUG)
 
-# Fixture
-#########
-
-@pytest.fixture(scope='module')
-def target_logger():
-    """
-    Allow logger injection within global fixtures
-    """
-    return logger
+# # Fixture
+# #########
+#
+# @pytest.fixture(scope='module')
+# def target_logger():
+#     """
+#     Allow logger injection within global fixtures
+#     """
+#     return logger
 
 # Tests
 #######
@@ -76,13 +76,14 @@ class TestKeycloakService(object):
         :return:
         """
 
-        # Challange value
+        # Challenge value
         keycloak_welcome_validation = 'Welcome to Keycloak'
 
         # Settings
         keycloak_hostname = test_settings['keycloak']['hostname']
         keycloak_scheme = test_settings['keycloak']['http_scheme']
         keycloak_ip = test_settings['keycloak']['ip']
+        keycloak_port = test_settings['keycloak']['port']
 
         # Test
         s = Session()
@@ -94,8 +95,9 @@ class TestKeycloakService(object):
 
         req = Request(
             method='GET',
-            url="{scheme}://{ip}/auth/".format(
+            url="{scheme}://{ip}:{port}/auth/".format(
                 scheme=keycloak_scheme,
+                port=keycloak_port,
                 ip=keycloak_ip
             ),
             headers=headers

@@ -49,25 +49,53 @@ logger.setLevel(logging.DEBUG)
 
 @pytest.fixture()
 def default_route_json_schema():
-    return """{
-  "type": "object",
-  "$schema": "http://json-schema.org/draft-06/schema#",
-  "properties": {
-    "name": {
-      "type": "string"
-    },
-    "version": {
-      "$id": "/properties/version",
-      "type": "string"
-    },
-    "environment": {
-      "type": "string"
-    },
-    "commit": {
-      "type": "string"
+    schema = {
+        "type": "object",
+        "$schema": "http://json-schema.org/schema#",
+        "properties": {
+            "name": {
+                "type": "string"
+            },
+            "version": {
+                "$id": "/properties/version",
+                "type": "string"
+            },
+            "environment": {
+                "type": "string"
+            },
+            "commit": {
+                "type": "string"
+            }
+        },
     }
-  }
-}"""
+    return schema
+
+@pytest.fixture()
+def services_json_schema():
+    schema = {
+        "type": "object",
+        "$schema": "http://json-schema.org/schema#",
+        "required": ["influx", "jaeger", "keycloak", "redis", "sentry"],
+        "properties": {
+            "influx": {
+                "type": "string"
+            },
+            "jaeger": {
+                "type": "string"
+            },
+            "keycloak": {
+                "type": "string"
+            },
+            "redis": {
+                "type": "string"
+            },
+            "sentry":{
+                "type": "string"
+            }
+        },
+    }
+    return schema
+
 
 
 @pytest.mark.usefixtures('disable_http_warning', scope='classe')
@@ -76,7 +104,7 @@ def default_route_json_schema():
 class TestKeycloakServiceBridge(object):
     """
     KeyCloak bridge service test.
-    This tests target a running and working instance of keycloak bridge connect to his keycloak instance
+    This test targets a running and working instance of keycloak bridge connect to his keycloak instance
     """
 
     def test_is_keycloak_bridge_online(self, test_settings, default_route_json_schema):
@@ -93,6 +121,7 @@ class TestKeycloakServiceBridge(object):
         keycloak_bridge_hostname = test_settings['keycloak_bridge']['hostname']
         keycloak_bridge_scheme = test_settings['keycloak_bridge']['http_scheme']
         keycloak_bridge_ip = test_settings['keycloak_bridge']['ip']
+        keycloak_bridge_port = test_settings['keycloak_bridge']['port']
 
         #Test
         s = Session()
@@ -104,9 +133,10 @@ class TestKeycloakServiceBridge(object):
 
         req = Request(
             method='GET',
-            url="{scheme}://{ip}/".format(
+            url="{scheme}://{ip}:{port}/".format(
                 scheme=keycloak_bridge_scheme,
-                ip=keycloak_bridge_ip
+                ip=keycloak_bridge_ip,
+                port=keycloak_bridge_port
             ),
             headers=headers
         )
@@ -123,7 +153,6 @@ class TestKeycloakServiceBridge(object):
         )
 
         response = s.send(prepared_request, verify=False)
-
         response_json = response.json()
 
         assert jsonschema.Draft3Validator(default_route_json_schema).is_valid(response_json)
@@ -132,3 +161,59 @@ class TestKeycloakServiceBridge(object):
             component_name,
             response_json['name']
         )
+
+
+    def test_are_all_services_running(self, test_settings, services_json_schema):
+        """
+        Test if all the services are up by doing a health check
+        :param test_settings: pytest config loaded from config file
+        :return:
+        """
+
+        #Challange value
+        fail_value = "KO"
+
+        #Settings
+        keycloak_bridge_hostname = test_settings['keycloak_bridge']['hostname']
+        keycloak_bridge_scheme = test_settings['keycloak_bridge']['http_scheme']
+        keycloak_bridge_ip = test_settings['keycloak_bridge']['ip']
+        keycloak_bridge_port = test_settings['keycloak_bridge']['port']
+
+        #Test
+        s = Session()
+
+        headers = {
+            'Accept': "application/json'",
+            'Host':   '{host}'.format(host=keycloak_bridge_hostname)
+        }
+
+        req = Request(
+            method='GET',
+            url="{scheme}://{ip}:{port}/health".format(
+                scheme=keycloak_bridge_scheme,
+                ip=keycloak_bridge_ip,
+                port=keycloak_bridge_port
+            ),
+            headers=headers
+        )
+
+        prepared_request = req.prepare()
+
+        logger.debug(
+            json.dumps(
+                prepared_request_to_json(req),
+                sort_keys=True,
+                indent=4,
+                separators=(',', ': ')
+            )
+        )
+
+        response = s.send(prepared_request, verify=False)
+        response_json = response.json()
+
+        assert jsonschema.Draft3Validator(services_json_schema).is_valid(response_json)
+
+        assert re.search(
+            fail_value,
+            response.text
+        ) is None

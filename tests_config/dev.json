@@ -2,13 +2,15 @@
   "keycloak": {
     "hostname": "keycloak.local",
     "ip": "192.168.190.136",
-    "http_scheme": "https"
+    "port": "8080",
+    "http_scheme": "http"
   },
-  "keycloak-bridge": {
+  "keycloak_bridge": {
     "hostname": "keycloak-bridge.local",
     "ip": "192.168.190.136",
-    "http_scheme": "https",
-    "go_component_name": "keycloak-bridge-service"
+    "port": "8888",
+    "http_scheme": "http",
+    "component_name": "keycloak-bridge"
   },
   "keycloak_container": {
     "container_name": "keycloak-1",
