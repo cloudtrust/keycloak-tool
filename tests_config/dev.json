@@ -1,17 +1,36 @@
 {
   "keycloak": {
     "hostname": "keycloak.local",
-    "ip": "192.168.16.42",
+    "ip": "192.168.190.136",
     "http_scheme": "https"
   },
   "keycloak-bridge": {
     "hostname": "keycloak-bridge.local",
-    "ip": "192.168.16.42",
+    "ip": "192.168.190.136",
     "http_scheme": "https",
     "go_component_name": "keycloak-bridge-service"
-    }
   },
-  "keycloack_container": {
-    "container_name": "keycloak-01",
+  "keycloak_container": {
+    "container_name": "keycloak-1",
+    "services": [
+      {
+        "name": "keycloak",
+        "timeout": 40
+      },
+      {
+        "name": "keycloak_bridge",
+        "timeout": 30
+      },
+      {
+        "name": "agent",
+        "timeout": 30
+      },
+      {
+        "name": "nginx",
+        "timeout": 30
+      }
+    ],
+    "monit_timeout": 30,
+    "ports": ["80"]
   }
 }

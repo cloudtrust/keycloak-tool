@@ -52,6 +52,16 @@ def pytest_addoption(parser):
 ##########
 
 @pytest.fixture
+def target_logger():
+    logging.basicConfig(
+        format='%(asctime)s %(name)s %(levelname)s %(message)s',
+        datefmt='%m/%d/%Y %I:%M:%S %p'
+    )
+    logger = logging.getLogger('keycloak-tool.tests')
+    logger.setLevel(logging.DEBUG)
+    return logger
+
+@pytest.fixture
 def disable_http_warning(target_logger):
     """
     Disable HTTPS warning at urlib3 level
@@ -61,7 +71,7 @@ def disable_http_warning(target_logger):
     requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 @pytest.fixture
-def test_settings(pytestconfig,target_logger):
+def test_settings(pytestconfig, target_logger):
     """
     Load json based configuration file from --config-file fixures args
     :param pytestconfig: pytest config containing --config-file args values
@@ -74,8 +84,8 @@ def test_settings(pytestconfig,target_logger):
         with open(config_file) as json_data:
             config = json.load(json_data)
 
-    except FileNotFoundError:
-        raise FileNotFoundError("Config file {path} not found".format(path=config_file))
+    except IOError:
+        raise IOError("Config file {path} not found".format(path=config_file))
     else:
 
         target_logger.debug(
