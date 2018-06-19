@@ -6,8 +6,8 @@ Dev, DevOps and Monitoring tools for RedHat Keycloak
 ```Bash
 git clone git@github.com:cloudtrust/keycloak-tool.git
 python3.6 -m venv keycloak-tool
-de keycloak-tool
-source bin/active
+cd keycloak-tool
+source bin/activate
 pip install -r requirements.txt
 ```
 
