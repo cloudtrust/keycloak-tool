@@ -27,6 +27,7 @@ author = "Sebastien Pasche"
 maintainer = "Sebastien Pasche"
 version = "0.0.1"
 
+import json
 
 def prepared_request_to_json(req):
     """
@@ -45,3 +46,17 @@ def prepared_request_to_json(req):
         json_request['body'] = req.body
 
     return json_request
+
+
+def log_request(logger, req):
+    """
+    Helper dedicated to log a request
+    """
+    logger.debug(
+        json.dumps(
+            prepared_request_to_json(req),
+            sort_keys=True,
+            indent=4,
+            separators=(',', ': ')
+        )
+    )

@@ -1,0 +1,27 @@
+{
+  "idp":{
+    "ip" : "int-idp.cloudtrust.io",
+    "port" : "443",
+    "http_scheme" : "https",
+    "login_form_id": "kc-form-login",
+    "logged_in_message": "Keycloak Account Management",
+    "not_authorized_message": "not_authorized",
+    "saml_broker": "cloudtrust_saml",
+    "wsfed_broker": "cloudtrust",
+    "master_realm":{
+      "name": "master",
+      "username": "admin",
+      "password": "admin",
+      "client_id": "admin-cli"
+    },
+    "test_realm":{
+      "name": "keycloak_testing",
+      "username": "test_keycloak",
+      "password": "toor1234*",
+      "json_file": "tests_config/test_disruption.json",
+      "attr_name": "userIP",
+      "external_attr_name": "externalClaim",
+      "attr_xml_elem": "saml:Attribute Name"
+    }
+  }
+}
