@@ -1,0 +1,154 @@
+{
+  "sps_saml": [
+    {
+      "_comment": "This SAML client requires for the Attribute of the user to be Guests and to have the Role role_test1",
+      "name": "sp_saml1",
+      "sso_url_name": "sp_saml1",
+      "protocol": "saml",
+      "ip": "dev-saml1.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    },
+    {
+      "_comment": "This SAML client has the Force Binding set to OFF and the Front Channel Logout set to OFF (while the rest of the client have these options to ON, by default)",
+      "_comment": "This SAML client requires for the Attribute of the user to be Guests and to have the Role role_test1",
+      "name": "sp_saml2",
+      "sso_url_name": "sp_saml2",
+      "protocol": "saml",
+      "ip": "dev-saml2.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    },
+    {
+      "_comment": "This SAML client requires for the user to have the Role role_test2",
+      "name": "sp_saml3",
+      "protocol": "saml",
+      "ip": "dev-saml3.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    },
+    {
+      "_comment": "This SAML client requires for the Attribute of the user to be Admin",
+      "name": "sp_saml4",
+      "protocol": "saml",
+      "ip": "dev-saml4.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    }
+  ],
+  "sps_wsfed": [
+    {
+      "_comment": "This WSFED client requires for the Attribute of the user to be Guests and to have the Role role_test1",
+      "name": "sp_wsfed1",
+      "protocol": "wsfed",
+      "ip": "dev-wsfed1.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    },
+    {
+      "_comment": "This WSFED client has the SAML Assertion Token Format set to SAML 1.1 and the Front Channel Logout set to ON (while the rest of the clients have these options set to SAML 2.0 and OFF respectively, by default)",
+      "_comment": "This WSFED client requires for the Attribute of the user to be Guests and to have the Role role_test1",
+      "name": "sp_wsfed2",
+      "protocol": "wsfed",
+      "ip": "dev-wsfed2.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    },
+    {
+      "_comment": "This WSFED client requires for the user to have the Role role_test2",
+      "name": "sp_wsfed3",
+      "protocol": "wsfed",
+      "ip": "dev-wsfed3.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    },
+    {
+      "_comment": "This WSFED client requires for the Attribute of the user to be Admin",
+      "name": "sp_wsfed4",
+      "protocol": "wsfed",
+      "ip": "dev-wsfed4.cloudtrust.io",
+      "port": "443",
+      "http_scheme": "https",
+      "path": "tokenInformation",
+      "logout_path": "singleLogout",
+      "logged_in_message": "Login successful, welcome",
+      "logged_out_message": "You have logged out"
+    }
+  ],
+  "idp":{
+    "ip" : "dev-idp.cloudtrust.io",
+    "port" : "443",
+    "http_scheme" : "https",
+    "login_form_id": "kc-form-login",
+    "login_form_update": "kc-update-profile-form",
+    "logged_in_message": "Keycloak Account Management",
+    "not_authorized_message": "not_authorized",
+    "saml_broker": "cloudtrust_saml",
+    "wsfed_broker": "cloudtrust",
+    "master_realm":{
+      "name": "master",
+      "username": "admin",
+      "password": "admin",
+      "client_id": "admin-cli"
+    },
+    "test_realm":{
+      "name": "automatic_keycloak_testing",
+      "username": "test_keycloak",
+      "password": "toor1234*",
+      "json_file": "tests_config/test_realm.json",
+      "attr_name": "userIP",
+      "external_attr_name": "externalClaim",
+      "attr_xml_elem": "saml:Attribute Name"
+    }
+  },
+  "idp_external":{
+    "ip" : "dem-idp.cloudtrust.io",
+    "port" : "443",
+    "http_scheme" : "https",
+    "login_form_id": "kc-form-login",
+    "logged_in_message": "Keycloak Account Management",
+    "not_authorized_message": "not_authorized",
+    "master_realm":{
+      "name": "master",
+      "username": "admin",
+      "password": "admin",
+      "client_id": "admin-cli"
+    },
+    "test_realm":{
+      "name": "automatic_keycloak_testing_external",
+      "username": "test_keycloak_external",
+      "password": "admin",
+      "json_file": "tests_config/test_realm_external.json",
+      "attr_name": "userIP_extIDP",
+      "attr_xml_elem": "saml:Attribute Name"
+    }
+  }
+}
