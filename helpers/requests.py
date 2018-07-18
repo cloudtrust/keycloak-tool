@@ -13,6 +13,7 @@
 #
 
 import json
+import time
 
 from helpers.logging import log_request
 
@@ -664,6 +665,32 @@ def get_access_token(logger, s, data, idp_scheme, idp_port, idp_ip, realm_id):
     return access_token
 
 
+def create_header(scheme, ip, port, access_token):
+    header = {
+        'Accept': "application/json,text/plain, */*",
+        'Accept-Encoding': "gzip, deflate",
+        'Accept-Language': "en-US,en;q=0.5",
+        'User-Agent': "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:59.0) Gecko/20100101 Firefox/59.0",
+        'Connection': "keep-alive",
+        'Content-Type': "application/json",
+        'Referer': "{scheme}://{ip}:{port}/auth/admin/master/console/".format(
+            scheme=scheme,
+            ip=ip,
+            port=port
+        ),
+        'Host': "{ip}:{port}".format(
+            ip=ip,
+            port=port
+        ),
+        "DNT": "1",
+        "Keep-Alive": "timeout=15, max=3",
+        'Authorization': 'Bearer ' + access_token
+
+    }
+
+    return header
+
+
 def get_header():
 
     header = {
@@ -676,3 +703,32 @@ def get_header():
     }
     return header
 
+
+def wait_online(s, scheme, ip, port, timeout=60):
+
+    req_test = Request(
+        method='GET',
+        url="{scheme}://{ip}:{port}/auth/admin".format(
+            scheme=scheme,
+            ip=ip,
+            port=port,
+        ),
+    )
+
+    prepared_request = req_test.prepare()
+
+    timeout_start = time.time() + timeout
+
+    while time.time() < timeout_start :
+        try:
+            response = s.send(prepared_request, verify=False)
+
+            if response.status_code < 400:
+                return True
+
+        except:
+            time.sleep(1)
+
+        time.sleep(1)
+
+    raise TimeoutError

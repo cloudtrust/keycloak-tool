@@ -13,6 +13,9 @@
 import pytest
 import json
 import logging
+from requests import Session, Request
+from helpers.logging import log_request
+import helpers.requests as req
 
 
 logging.basicConfig(
@@ -40,3 +43,80 @@ def settings(pytestconfig):
     return config
 
 
+@pytest.fixture(scope='session')
+def import_realm(settings):
+    """
+    Fixture to perform the import of a realm from a JSON file
+    :param settings:
+    :return:
+    """
+
+    # Identity provider settings
+    idp_ip = settings["idp"]["ip"]
+    idp_port = settings["idp"]["port"]
+    idp_scheme = settings["idp"]["http_scheme"]
+
+    idp_username = settings["idp"]["master_realm"]["username"]
+    idp_password = settings["idp"]["master_realm"]["password"]
+    idp_client_id = settings["idp"]["master_realm"]["client_id"]
+
+    idp_realm_id = settings["idp"]["master_realm"]["name"]
+
+    filename = settings["idp"]["test_realm"]["json_file"]
+
+    s = Session()
+
+    access_token_data={
+        "client_id": idp_client_id,
+        "username": idp_username,
+        "password": idp_password,
+        "grant_type": "password"
+    }
+
+    access_token = req.get_access_token(logger, s, access_token_data, idp_scheme, idp_port, idp_ip, idp_realm_id)
+
+    header = {
+        'Accept': "application/json,text/plain, */*",
+        'Accept-Encoding': "gzip, deflate",
+        'Accept-Language': "en-US,en;q=0.5",
+        'User-Agent': "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:59.0) Gecko/20100101 Firefox/59.0",
+        'Connection': "keep-alive",
+        'Content-Type': "application/json",
+        'Referer': "{scheme}://{ip}:{port}/auth/admin/master/console/".format(
+            scheme=idp_scheme,
+            ip=idp_ip,
+            port=idp_port
+        ),
+        'Host': "{ip}:{port}".format(
+            ip=idp_ip,
+            port=idp_port
+        ),
+        "DNT": "1",
+        "Keep-Alive": "timeout=15, max=3",
+        'Authorization': 'Bearer ' + access_token
+
+    }
+
+    with open(filename, "r") as f:
+        realm_representation = f.read()
+
+    req_import_realm = Request(
+        method='POST',
+        url="{scheme}://{ip}:{port}/auth/admin/realms".format(
+            scheme=idp_scheme,
+            ip=idp_ip,
+            port=idp_port,
+        ),
+        headers=header,
+        data=realm_representation
+    )
+
+    prepared_request = req_import_realm.prepare()
+
+    log_request(logger, req_import_realm)
+
+    response = s.send(prepared_request, verify=False)
+
+    logger.debug(response.status_code)
+
+    return response

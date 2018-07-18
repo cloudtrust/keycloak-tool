@@ -1,6 +1,6 @@
 {
   "idp":{
-    "ip" : "int-idp.cloudtrust.io",
+    "ip" : "int-keycock.cloudtrust.io",
     "port" : "443",
     "http_scheme" : "https",
     "login_form_id": "kc-form-login",

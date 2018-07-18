@@ -108,3 +108,4 @@ pyvenv.cfg
 bin/
 lib64
 pip-selfcheck.json
+.pytest_cache/
