@@ -54,7 +54,7 @@ logger = logging.getLogger('keycloak-tool.fuzzing_tests.Test_login_fuzzing_optio
 logger.setLevel(logging.INFO)
 # Use TimedRotatingFileHandler to have rotation of disk log files
 filelog = logging.handlers.TimedRotatingFileHandler(filename,
-                                                    when="m",
+                                                    when="h",
                                                     interval=6,
                                                     backupCount=10)
 formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s', '%m/%d/%Y %I:%M:%S %p')

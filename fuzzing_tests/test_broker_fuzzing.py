@@ -52,10 +52,10 @@ version = "0.0.1"
 
 filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'broker_fuzzing.log')
 logger = logging.getLogger('keycloak-tool.fuzzing_tests.Test_broker_fuzzing')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 # Use TimedRotatingFileHandler to have rotation of disk log files
 filelog = logging.handlers.TimedRotatingFileHandler(filename,
-                                                    when="h",
+                                                    when="m",
                                                     interval=6,
                                                     backupCount=10)
 formatter = logging.Formatter('%(asctime)s %(levelname)-8s %(message)s', '%m/%d/%Y %I:%M:%S %p')
@@ -66,18 +66,20 @@ logger.addHandler(filelog)
 @pytest.mark.usefixtures('settings', 'import_realm', 'import_realm_external')
 class Test_broker_fuzzing():
     """
-    ##TODO: update the description
-    Class to do fuzzing tests on the required wsfed fields: wa and wtrealm when requesting a security token for login.
+    Class that contains fuzzing tests on the broker login scenario (CT-TC-WS-FED-BROKER-SIMPLE)
+    where we fuzz the parameters of the request from the external IDP to the broker
     """
 
     def test_security_broker_fuzzing(self, settings):
         """
-        ##TODO: update the description
         This test respects the following use-case:
-        - browser does a GET request to Keycloak (with the goal of performing a login) where one or both of the
-        parameters, wa and wtrealm, are fuzzed.
-        - after the GET request is done, we check if Keycloak is still working properly by doing a login and a logout
-        - repeat the previous steps an unlimited number of times
+        - we simulate a login using an external IDP; in this case the external IDP generates a token that is transmitted
+        to the broker IDP and used further to allow access to the service provider for the correctly authentified user
+        - for the tests, we fuzz one or more of the parameters 'wa', 'wtrealm', 'wresult' or 'wctx' from the token sent from the
+        external IDP to the broker IDP
+        - we check what is the return code of the broker IDP when sending the fuzzed token
+        - afterwards, we check if Keycloak is still working properly by doing a login and a logout
+        Repeat the previous steps an unlimited number of times
         - as output we expect to receive 400 and 414 from Keycloak and for the login and logout to be done
         successfully
         :param settings:
@@ -109,10 +111,9 @@ class Test_broker_fuzzing():
 
         # follow the login flow up to the moment that the external IDP sends the reply (containing the wsfed fields)
         # to the broker
-        for i in range(0,100):
+        for i in range(0,1):
         #while True:
-            print("*********************************")
-            print(i)
+
             s = Session()
 
             # Service provider settings
@@ -129,7 +130,7 @@ class Test_broker_fuzzing():
             idp_ip = settings["idp"]["ip"]
             idp_port = settings["idp"]["port"]
             idp_scheme = settings["idp"]["http_scheme"]
-            idp_brokers = settings["idp"]["wsfed_broker"]
+            idp_broker = settings["idp"]["wsfed_broker"]
 
             idp_username = settings["idp_external"]["test_realm"]["username"]
             idp_password = settings["idp_external"]["test_realm"]["password"]
@@ -260,11 +261,11 @@ class Test_broker_fuzzing():
                     choice = random.random()
                     if choice > 0.5:  # we fuzz the parameter
                         token[params[i]] = fuzz.get_fuzzed_value(logger, token[params[i]]) #.decode('utf-8')
-                        logger.info(token[params[i]])
+                        #logger.info(token[params[i]])
             except Exception as e:
                 print(e)
 
-            logger.info(token)
+            logger.info("Fuzzed token sent to the broker is {t}".format(t=token))
 
             req_token_from_external_idp = Request(
                 method=method_form,
@@ -285,7 +286,7 @@ class Test_broker_fuzzing():
             logger.info(response.status_code)
 
 
-
+            time.sleep(2)
 
             # check that Keycloak is up there running and able to answer to requests
             # run the wsfed login test
@@ -481,6 +482,86 @@ class Test_broker_fuzzing():
             # assert that we are logged in
             assert re.search(sp_message, response.text) is not None
             logger.info("Login returned a {code} status code".format(code=response.status_code))
+
+            # perform the logout
+            # Remark: the wsfed logout does not work for the broker case; the logout is done only on the broker side and not also on the external IDP side
+            # So here we simulate only the logout on the broker side
+
+            # Access to the SP logout page
+            header_sp_logout_page = {
+                **header,
+                'Host': "{ip}:{port}".format(ip=sp_ip, port=sp_port),
+                'Referer': "{scheme}://{ip}:{port}".format(scheme=sp_scheme, ip=sp_ip, port=sp_port)
+            }
+
+            req_get_sp_logout_page = Request(
+                method='GET',
+                url="{scheme}://{ip}:{port}/{path}".format(
+                    scheme=sp_scheme,
+                    port=sp_port,
+                    ip=sp_ip,
+                    path=sp_logout_path
+                ),
+                headers=header_sp_logout_page,
+                cookies=sp_cookie
+            )
+
+            prepared_request = req_get_sp_logout_page.prepare()
+
+            log_request(logger, req_get_sp_logout_page)
+
+            response = s.send(prepared_request, verify=False, allow_redirects=False)
+
+            logger.debug(response.status_code)
+
+            redirect_url = response.headers['Location']
+
+            req_sp_logout_redirect = Request(
+                method='GET',
+                url=redirect_url,
+                headers=header_sp_logout_page,
+                cookies={**sp_cookie}
+            )
+
+            prepared_request = req_sp_logout_redirect.prepare()
+
+            log_request(logger, req_sp_logout_redirect)
+
+            response = s.send(prepared_request, verify=False, allow_redirects=False)
+
+            logger.debug(response.status_code)
+
+            redirect_url = response.headers['Location']
+
+            response = req.redirect_to_idp(logger, s, redirect_url, header, {**sp_cookie, **keycloak_cookie})
+
+            assert response.status_code == HTTPStatus.OK
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            form = soup.body.form
+            url_form = form.get('action')
+            method_form = form.get('method')
+            inputs = form.find_all('input')
+
+            # Send the token
+            token = {}
+            for input in inputs:
+                token[input.get('name')] = input.get('value')
+
+            (response, cookie) = req.access_sp_with_token(logger, s, header, sp_ip, sp_port, sp_scheme, idp_scheme,
+                                                          idp_ip, idp_port,
+                                                          method_form, url_form, token, sp_cookie, sp_cookie, )
+
+            assert response.status_code == HTTPStatus.OK
+
+            #print(response.text)
+
+            assert re.search(sp_logout_message, response.text) is not None
+
+
+
+
 
 
 
