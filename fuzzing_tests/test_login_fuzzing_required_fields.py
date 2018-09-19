@@ -50,7 +50,7 @@ version = "0.0.1"
 ##################
 
 filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'login_fuzz_required_parameter.log')
-logger = logging.getLogger('keycloak-tool.fuzzing_tests.Test_login_fuzzing_require_fields')
+logger = logging.getLogger('keycloak-tool.fuzzing_tests.Test_login_fuzzing_required_fields')
 logger.setLevel(logging.INFO)
 # Use TimedRotatingFileHandler to have rotation of disk log files
 filelog = logging.handlers.TimedRotatingFileHandler(filename,
@@ -63,12 +63,20 @@ logger.addHandler(filelog)
 
 
 @pytest.mark.usefixtures('settings', 'import_realm')
-class Test_fuzzing_wsfed_parameters():
+class Test_login_fuzzing_required_fields():
     """
+    Class to do fuzzing tests on the required wsfed fields: wa and wtrealm when requesting a security token for login.
 
     """
     def test_security_fuzzing_wa_wsfed_parameter(self, settings):
         """
+        This test respects the following use-case:
+        - browser does a GET request to Keycloak (with the goal of performing a login) where one or both of the
+        parameters, wa and wtrealm, are fuzzed.
+        - after the GET request is done, we check if Keycloak is still working properly by doing a login and a logout
+        - repeat the previous steps an unlimited number of times
+        - as output we expect to receive 400 and 414 from Keycloak and for the login and logout to be done
+        successfully
         :param settings:
         :return:
         """
