@@ -17,7 +17,7 @@ Contains tests related to Keycloak services, container and business functionalit
 
 * Service tests to test Keycloak and various component as standalone services
 * Container tests to test container build, architecture and plumbing
-* Functionnal tests to test end-to-end functionality
+* Functional tests to test end-to-end functionality
 
 ## Run test
 
