@@ -29,7 +29,7 @@ We test two scenarios:
  
 - broker login where the external IDP is sending a fuzzed WSFED token to the broker IDP (`test_broker_fuzzing`)
 
-Once an invalid request is sent to Keycloak, we log the reply and check if Keycloak is functioning correct 
+Once an invalid request is sent to Keycloak, we log the reply and check if Keycloak is functioning correctly 
 by performing a login action.
 
 The tool used for fuzzing is **randamsa** (https://gitlab.com/akihe/radamsa). 
