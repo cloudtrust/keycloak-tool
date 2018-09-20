@@ -58,7 +58,7 @@ python3 -m pytest -vs fuzzing_tests/{name_of_the_test}.py --config-file tests_co
 ## Log files
 
 The invalid request, the reply of Keycloak to the invalid request and the information on whether the login done afterwards 
-was successful are logged. We have a rotation of the log files every hour and we backup the last six hours. 
+was successful or not are logged. We have a rotation of the log files every hour and we backup the last six hours. 
 
 ```buildoutcfg
 filelog = logging.handlers.TimedRotatingFileHandler(filename,
