@@ -284,3 +284,127 @@ def kerberos_form_fallback(logger, s, response, header, cookie):
 
 
 
+def get_user(s, logger, idp_ip, idp_port, idp_scheme, idp_username, idp_password, idp_client_id, idp_realm_id, idp_realm_test, username):
+    """
+    Helper dedicated to obtain the representation of a user
+    :param settings:
+    :return:
+    """
+
+    access_token_data={
+        "client_id": idp_client_id,
+        "username": idp_username,
+        "password": idp_password,
+        "grant_type": "password"
+    }
+
+    access_token = get_access_token(logger, s, access_token_data, idp_scheme, idp_port, idp_ip, idp_realm_id)
+
+    header = {
+        'Accept': "application/json,text/plain, */*",
+        'Accept-Encoding': "gzip, deflate",
+        'Accept-Language': "en-US,en;q=0.5",
+        'User-Agent': "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:59.0) Gecko/20100101 Firefox/59.0",
+        'Connection': "keep-alive",
+        'Content-Type': "application/json",
+        'Referer': "{scheme}://{ip}:{port}/auth/admin/master/console/".format(
+            scheme=idp_scheme,
+            ip=idp_ip,
+            port=idp_port
+        ),
+        'Host': "{ip}:{port}".format(
+            ip=idp_ip,
+            port=idp_port
+        ),
+        "DNT": "1",
+        "Keep-Alive": "timeout=15, max=3",
+        'Authorization': 'Bearer ' + access_token
+
+    }
+
+    params = {'username': username}
+
+    req_get_user = Request(
+        method='GET',
+        url="{scheme}://{ip}:{port}/auth/admin/realms/{realm}/users".format(
+            scheme=idp_scheme,
+            ip=idp_ip,
+            port=idp_port,
+            realm=idp_realm_test
+        ),
+        headers=header,
+        params=params
+    )
+
+    prepared_request = req_get_user.prepare()
+
+    log_request(logger, req_get_user)
+
+    response = s.send(prepared_request, verify=False)
+
+    logger.debug(response.status_code)
+
+    return response.text
+
+
+def remove_user_sessions(s, logger, idp_ip, idp_port, idp_scheme, idp_username, idp_password, idp_client_id, idp_realm_id, idp_realm_test, user_id):
+    """
+    Helper dedicated to remove all users sessions associated with the user id
+    :param settings:
+    :return:
+    """
+
+    access_token_data={
+        "client_id": idp_client_id,
+        "username": idp_username,
+        "password": idp_password,
+        "grant_type": "password"
+    }
+
+    access_token = get_access_token(logger, s, access_token_data, idp_scheme, idp_port, idp_ip, idp_realm_id)
+
+    header = {
+        'Accept': "application/json,text/plain, */*",
+        'Accept-Encoding': "gzip, deflate",
+        'Accept-Language': "en-US,en;q=0.5",
+        'User-Agent': "Mozilla/5.0 (X11; Fedora; Linux x86_64; rv:59.0) Gecko/20100101 Firefox/59.0",
+        'Connection': "keep-alive",
+        'Content-Type': "application/json",
+        'Referer': "{scheme}://{ip}:{port}/auth/admin/master/console/".format(
+            scheme=idp_scheme,
+            ip=idp_ip,
+            port=idp_port
+        ),
+        'Host': "{ip}:{port}".format(
+            ip=idp_ip,
+            port=idp_port
+        ),
+        "DNT": "1",
+        "Keep-Alive": "timeout=15, max=3",
+        'Authorization': 'Bearer ' + access_token
+
+    }
+
+    req_remove_user_sessions = Request(
+        method='POST',
+        url="{scheme}://{ip}:{port}/auth/admin/realms/{realm}/users/{id}/logout".format(
+            scheme=idp_scheme,
+            ip=idp_ip,
+            port=idp_port,
+            realm=idp_realm_test,
+            id=user_id
+        ),
+        headers=header,
+    )
+
+    prepared_request = req_remove_user_sessions.prepare()
+
+    log_request(logger, req_remove_user_sessions)
+
+    response = s.send(prepared_request, verify=False)
+
+    logger.debug(response.status_code)
+
+    return response.status_code
+
+

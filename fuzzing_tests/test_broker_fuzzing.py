@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Copyright (C) 2018:
 #     Sonia Bogos, sonia.bogos@elca.ch
@@ -21,6 +21,7 @@ import calendar
 import os
 import sys
 import fcntl
+import json
 
 import helpers.fuzzing as fuzz
 import helpers.requests as req
@@ -74,7 +75,7 @@ class Test_broker_fuzzing():
         """
         This test respects the following use-case:
         - we simulate a login using an external IDP; in this case the external IDP generates a token that is transmitted
-        to the broker IDP and used further to allow access to the service provider for the correctly authentified user
+        to the broker IDP and used further to allow access to the service provider for the correctly authenticated user
         - for the tests, we fuzz one or more of the parameters 'wa', 'wtrealm', 'wresult' or 'wctx' from the token sent from the
         external IDP to the broker IDP
         - we check what is the return code of the broker IDP when sending the fuzzed token
@@ -111,8 +112,8 @@ class Test_broker_fuzzing():
 
         # follow the login flow up to the moment that the external IDP sends the reply (containing the wsfed fields)
         # to the broker
-        for i in range(0,1):
-        #while True:
+        #for i in range(0,1):
+        while True:
 
             s = Session()
 
@@ -123,23 +124,35 @@ class Test_broker_fuzzing():
             sp_scheme = sp["http_scheme"]
             sp_path = sp["path"]
             sp_message = sp["logged_in_message"]
-            sp_logout_path = sp["logout_path"]
-            sp_logout_message = sp["logged_out_message"]
 
             # Identity provider settings
+            # IDP broker
             idp_ip = settings["idp"]["ip"]
             idp_port = settings["idp"]["port"]
             idp_scheme = settings["idp"]["http_scheme"]
             idp_broker = settings["idp"]["wsfed_broker"]
 
+            idp_client_id = settings["idp"]["master_realm"]["client_id"]
+            idp_realm_id = settings["idp"]["master_realm"]["name"]
+            idp_realm_test = settings["idp"]["test_realm"]["name"]
+            idp_master_username = settings["idp"]["master_realm"]["username"]
+            idp_master_password = settings["idp"]["master_realm"]["password"]
+
             idp_username = settings["idp_external"]["test_realm"]["username"]
             idp_password = settings["idp_external"]["test_realm"]["password"]
 
+            # IDP external
             idp2_ip = settings["idp_external"]["ip"]
             idp2_port = settings["idp_external"]["port"]
             idp2_scheme = settings["idp_external"]["http_scheme"]
+            idp2_client_id = settings["idp_external"]["master_realm"]["client_id"]
+            idp2_realm_id = settings["idp_external"]["master_realm"]["name"]
+            idp2_realm_test = settings["idp_external"]["test_realm"]["name"]
+            idp2_master_username = settings["idp_external"]["master_realm"]["username"]
+            idp2_master_password = settings["idp_external"]["master_realm"]["password"]
 
             keycloak_login_form_id = settings["idp"]["login_form_id"]
+
 
             # Common header for all the requests
             header = req.get_header()
@@ -252,18 +265,18 @@ class Test_broker_fuzzing():
                 token[input.get('name')] = input.get('value')
 
             try:
-
                 ## we fuzz the values of the token
                 params = ['wa', 'wtrealm', 'wresult', 'wctx']
                 # choose what parameters are going to be fuzzed
-                for i in range(0, 4):
+                for i in range(0, len(params)):
                     random.seed(calendar.timegm(time.gmtime()) + random.randint(0, 1000))
                     choice = random.random()
                     if choice > 0.5:  # we fuzz the parameter
-                        token[params[i]] = fuzz.get_fuzzed_value(logger, token[params[i]]) #.decode('utf-8')
-                        #logger.info(token[params[i]])
+                        fuzz_value = fuzz.get_fuzzed_value(logger, token[params[i]])
+                        token[params[i]] = fuzz_value
             except Exception as e:
-                print(e)
+                print("There is a problem with the fuzzer: {e}".format(e=e))
+                logger.info("There is a problem with the fuzzer: {e}".format(e=e))
 
             logger.info("Fuzzed token sent to the broker is {t}".format(t=token))
 
@@ -275,8 +288,6 @@ class Test_broker_fuzzing():
                 headers=header
             )
 
-
-
             prepared_request = req_token_from_external_idp.prepare()
 
             req.log_request(logger, req_token_from_external_idp)
@@ -284,9 +295,6 @@ class Test_broker_fuzzing():
 
             # log what status code we get from the broker
             logger.info(response.status_code)
-
-
-            time.sleep(2)
 
             # check that Keycloak is up there running and able to answer to requests
             # run the wsfed login test
@@ -483,85 +491,40 @@ class Test_broker_fuzzing():
             assert re.search(sp_message, response.text) is not None
             logger.info("Login returned a {code} status code".format(code=response.status_code))
 
-            # perform the logout
-            # Remark: the wsfed logout does not work for the broker case; the logout is done only on the broker side and not also on the external IDP side
-            # So here we simulate only the logout on the broker side
-
-            # Access to the SP logout page
-            header_sp_logout_page = {
-                **header,
-                'Host': "{ip}:{port}".format(ip=sp_ip, port=sp_port),
-                'Referer': "{scheme}://{ip}:{port}".format(scheme=sp_scheme, ip=sp_ip, port=sp_port)
-            }
-
-            req_get_sp_logout_page = Request(
-                method='GET',
-                url="{scheme}://{ip}:{port}/{path}".format(
-                    scheme=sp_scheme,
-                    port=sp_port,
-                    ip=sp_ip,
-                    path=sp_logout_path
-                ),
-                headers=header_sp_logout_page,
-                cookies=sp_cookie
-            )
-
-            prepared_request = req_get_sp_logout_page.prepare()
-
-            log_request(logger, req_get_sp_logout_page)
-
-            response = s.send(prepared_request, verify=False, allow_redirects=False)
-
-            logger.debug(response.status_code)
-
-            redirect_url = response.headers['Location']
-
-            req_sp_logout_redirect = Request(
-                method='GET',
-                url=redirect_url,
-                headers=header_sp_logout_page,
-                cookies={**sp_cookie}
-            )
-
-            prepared_request = req_sp_logout_redirect.prepare()
-
-            log_request(logger, req_sp_logout_redirect)
-
-            response = s.send(prepared_request, verify=False, allow_redirects=False)
-
-            logger.debug(response.status_code)
-
-            redirect_url = response.headers['Location']
-
-            response = req.redirect_to_idp(logger, s, redirect_url, header, {**sp_cookie, **keycloak_cookie})
-
-            assert response.status_code == HTTPStatus.OK
-
-            soup = BeautifulSoup(response.content, 'html.parser')
-
-            form = soup.body.form
-            url_form = form.get('action')
-            method_form = form.get('method')
-            inputs = form.find_all('input')
-
-            # Send the token
-            token = {}
-            for input in inputs:
-                token[input.get('name')] = input.get('value')
-
-            (response, cookie) = req.access_sp_with_token(logger, s, header, sp_ip, sp_port, sp_scheme, idp_scheme,
-                                                          idp_ip, idp_port,
-                                                          method_form, url_form, token, sp_cookie, sp_cookie, )
-
-            assert response.status_code == HTTPStatus.OK
-
-            #print(response.text)
-
-            assert re.search(sp_logout_message, response.text) is not None
+            # cleanup: remove the open sessions of the test user from the broker IDP and external IDP
 
 
+            # remove the sessions from broker IDP
+            # first, obtain the id of the user
+            user_repr = req.get_user(s, logger, idp_ip, idp_port, idp_scheme, idp_master_username, idp_master_password, idp_client_id,
+                                 idp_realm_id,
+                                 idp_realm_test, idp_username)
 
+            user_id = json.loads(user_repr)[0]['id']
 
+            # remove the open sessions
+            status_code = req.remove_user_sessions(s, logger, idp_ip, idp_port, idp_scheme, idp_master_username, idp_master_password,
+                                               idp_client_id, idp_realm_id,
+                                               idp_realm_test, user_id)
+
+            assert status_code == HTTPStatus.NO_CONTENT
+
+            # remove the sessions from the external IDP
+            # first, obtain the id of the user
+            user_repr = req.get_user(s, logger, idp2_ip, idp2_port, idp2_scheme, idp2_master_username, idp2_master_password,
+                                 idp2_client_id,
+                                 idp2_realm_id,
+                                 idp2_realm_test, idp_username)
+
+            user_id = json.loads(user_repr)[0]['id']
+
+            # remove the open sessions
+            status_code = req.remove_user_sessions(s, logger, idp2_ip, idp2_port, idp2_scheme, idp2_master_username,
+                                               idp2_master_password,
+                                               idp2_client_id, idp2_realm_id,
+                                               idp2_realm_test, user_id)
+
+            assert status_code == HTTPStatus.NO_CONTENT
 
 
 

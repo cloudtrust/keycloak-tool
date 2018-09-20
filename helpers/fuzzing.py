@@ -22,8 +22,8 @@ version = "0.0.1"
 def get_fuzzed_value(logger, param):
 
     proc = subprocess.Popen(
-        ["echo {param} | radamsa".format(param=param)],
+        ["echo '{param}' | radamsa".format(param=param)],
         stdout=subprocess.PIPE, shell=True)
     (out, err) = proc.communicate()
-    logger.debug("echo {param} | radamsa".format(param=param))
+    #logger.debug("echo {param} | radamsa".format(param=param))
     return out[:-1]

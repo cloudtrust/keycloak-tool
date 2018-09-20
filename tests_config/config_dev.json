@@ -130,7 +130,7 @@
     }
   },
   "idp_external":{
-    "ip" : "dem-idp.cloudtrust.io",
+    "ip" : "int-idp.cloudtrust.io",
     "port" : "443",
     "http_scheme" : "https",
     "login_form_id": "kc-form-login",
